@@ -17,6 +17,9 @@ emails/
 # macOS
 .DS_Store
 
+# Internal docs
+docs/
+
 # Build artifacts
 *.egg-info/
 dist/
