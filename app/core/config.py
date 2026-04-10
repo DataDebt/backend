@@ -3,12 +3,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", enable_decoding=False)
 
     app_name: str = "Auth Platform API"
     environment: str = "development"
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
+    frontend_base_url: str = Field(default="http://localhost:3000", alias="FRONTEND_BASE_URL")
+    backend_cors_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:3000"],
+        alias="BACKEND_CORS_ORIGINS",
+    )
     database_url: str = Field(alias="DATABASE_URL")
     secret_key: str = Field(alias="SECRET_KEY")
     refresh_token_secret: str = Field(alias="REFRESH_TOKEN_SECRET")
@@ -34,6 +39,13 @@ class Settings(BaseSettings):
                 return True
             if normalized in {"0", "false", "no", "off", "release"}:
                 return False
+        return value
+
+    @field_validator("backend_cors_origins", mode="before")
+    @classmethod
+    def _coerce_backend_cors_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
 
 
