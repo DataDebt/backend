@@ -14,7 +14,7 @@ class AuthService:
         self.session = session
         self.users = UserRepository(session)
         self.verifications = EmailVerificationRepository(session)
-        self.refresh_tokens = RefreshTokenRepository(session)
+        self.refresh_token_repo = RefreshTokenRepository(session)
         self.password_resets = PasswordResetRepository(session)
         self.tokens = TokenService()
 
@@ -45,7 +45,7 @@ class AuthService:
             raise PermissionError("Email not verified")
 
         raw_refresh, refresh_hash, refresh_expires_at = self.tokens.issue_refresh_token()
-        await self.refresh_tokens.create(user_id=user.id, token_hash=refresh_hash, expires_at=refresh_expires_at)
+        await self.refresh_token_repo.create(user_id=user.id, token_hash=refresh_hash, expires_at=refresh_expires_at)
         user.last_login_at = datetime.now(UTC)
         await self.session.commit()
         access_token = create_access_token(subject=str(user.id), username=user.username)
@@ -62,14 +62,14 @@ class AuthService:
 
     async def refresh_tokens(self, raw_refresh_token: str):
         token_hash = hash_opaque_token(raw_refresh_token)
-        token = await self.refresh_tokens.get_by_hash(token_hash)
+        token = await self.refresh_token_repo.get_by_hash(token_hash)
         if not token or token.revoked_at or token.expires_at < datetime.now(UTC):
             raise ValueError("Invalid or expired refresh token")
 
         # Rotate: revoke old token, issue new one
-        await self.refresh_tokens.revoke(token)
+        await self.refresh_token_repo.revoke(token)
         raw_new_refresh, new_refresh_hash, new_refresh_expires_at = self.tokens.issue_refresh_token()
-        await self.refresh_tokens.create(
+        await self.refresh_token_repo.create(
             user_id=token.user.id,
             token_hash=new_refresh_hash,
             expires_at=new_refresh_expires_at,
