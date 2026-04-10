@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from app.core.config import Settings
 
 
@@ -36,6 +39,23 @@ def test_settings_load_json_array_cors_origins_from_env(monkeypatch):
         "https://frontend.example.com",
         "https://admin.example.com",
     ]
+
+
+@pytest.mark.parametrize(
+    "cors_origins",
+    [
+        '[1, "https://frontend.example.com"]',
+        '[null, "https://frontend.example.com"]',
+    ],
+)
+def test_settings_rejects_non_string_json_array_cors_origins(monkeypatch, cors_origins):
+    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost:5432/app")
+    monkeypatch.setenv("SECRET_KEY", "super-secret")
+    monkeypatch.setenv("REFRESH_TOKEN_SECRET", "refresh-secret")
+    monkeypatch.setenv("BACKEND_CORS_ORIGINS", cors_origins)
+
+    with pytest.raises(ValidationError):
+        Settings()
 
 
 def test_settings_uses_default_frontend_integration_values(monkeypatch):
