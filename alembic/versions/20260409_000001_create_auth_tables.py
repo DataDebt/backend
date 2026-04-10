@@ -1,6 +1,6 @@
 """create auth tables
 
-Revision ID: 20260409_000001_create_auth_tables
+Revision ID: 20260409_create_auth_tables
 Revises: 
 Create Date: 2026-04-09 00:00:01
 
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
-revision: str = "20260409_000001_create_auth_tables"
+revision: str = "20260409_create_auth_tables"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
