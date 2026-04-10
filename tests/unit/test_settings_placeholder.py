@@ -18,6 +18,8 @@ def test_importing_config_is_safe_without_required_env(monkeypatch):
     monkeypatch.delenv("REFRESH_TOKEN_SECRET", raising=False)
 
     module = _import_fresh_config_module()
+    # Prevent pydantic-settings from reading the .env file on disk
+    monkeypatch.setattr(module.Settings, "model_config", {**module.Settings.model_config, "env_file": None})
 
     with pytest.raises(ValidationError):
         _ = module.settings.database_url

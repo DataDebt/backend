@@ -1,0 +1,6 @@
+{
+  "to": "prueba1@example.com",
+  "subject": "Confirm your email",
+  "confirm_url": "http://localhost:8000/api/v1/auth/confirm-email?token=rz84idlmPcvUlu14FeAosPuFLrOC2ojMA0E10-Ai3fU",
+  "username": "prueba1"
+}
