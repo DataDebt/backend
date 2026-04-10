@@ -1,3 +1,23 @@
 .worktrees/
 __pycache__/
 *.py[cod]
+
+# Environment
+.env
+.env.local
+
+# Database files
+*.db
+*.sqlite
+db/
+
+# Email capture artifacts
+emails/
+
+# macOS
+.DS_Store
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
