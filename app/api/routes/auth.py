@@ -23,6 +23,10 @@ from app.services.email_service import (
 router = APIRouter(tags=["auth"])
 
 
+def _build_frontend_auth_url(path: str, token: str) -> str:
+    return f"{settings.frontend_base_url.rstrip('/')}{path}?token={token}"
+
+
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     payload: RegisterRequest,
@@ -35,7 +39,7 @@ async def register(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
-    confirm_url = f"{settings.base_url}/api/v1/auth/confirm-email?token={raw_token}"
+    confirm_url = _build_frontend_auth_url("/auth/confirm-email", raw_token)
     html = build_email_verification_html(user.username, confirm_url)
     background_tasks.add_task(
         send_email,
@@ -90,7 +94,7 @@ async def resend_verification(
     user, raw_token = await service.resend_verification(payload.email)
 
     if user and raw_token:
-        confirm_url = f"{settings.base_url}/api/v1/auth/confirm-email?token={raw_token}"
+        confirm_url = _build_frontend_auth_url("/auth/confirm-email", raw_token)
         html = build_email_verification_html(user.username, confirm_url)
         background_tasks.add_task(
             send_email,
@@ -112,7 +116,7 @@ async def request_password_reset(
     service = AuthService(session)
     raw_token, user = await service.request_password_reset(payload.email)
     if raw_token and user:
-        reset_url = f"{settings.base_url}/api/v1/auth/reset-password?token={raw_token}"
+        reset_url = _build_frontend_auth_url("/auth/reset-password", raw_token)
         html = build_password_reset_html(user.username, reset_url)
         background_tasks.add_task(
             send_email,
