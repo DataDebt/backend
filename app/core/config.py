@@ -1,16 +1,19 @@
+import json
+from typing import Annotated
+
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", enable_decoding=False)
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_name: str = "Auth Platform API"
     environment: str = "development"
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
     frontend_base_url: str = Field(default="http://localhost:3000", alias="FRONTEND_BASE_URL")
-    backend_cors_origins: list[str] = Field(
+    backend_cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:3000"],
         alias="BACKEND_CORS_ORIGINS",
     )
@@ -45,7 +48,15 @@ class Settings(BaseSettings):
     @classmethod
     def _coerce_backend_cors_origins(cls, value: object) -> object:
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            normalized = value.strip()
+            if not normalized:
+                return []
+
+            if normalized.startswith("["):
+                parsed = json.loads(normalized)
+                return [origin.strip() for origin in parsed if origin.strip()]
+
+            return [origin.strip() for origin in normalized.split(",") if origin.strip()]
         return value
 
 

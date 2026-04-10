@@ -1,14 +1,14 @@
 from app.core.config import Settings
 
 
-def test_settings_load_frontend_base_url_and_cors_origins_from_env(monkeypatch):
+def test_settings_load_frontend_base_url_and_comma_separated_cors_origins_from_env(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost:5432/app")
     monkeypatch.setenv("SECRET_KEY", "super-secret")
     monkeypatch.setenv("REFRESH_TOKEN_SECRET", "refresh-secret")
     monkeypatch.setenv("FRONTEND_BASE_URL", "https://frontend.example.com")
     monkeypatch.setenv(
         "BACKEND_CORS_ORIGINS",
-        "https://frontend.example.com, https://admin.example.com, http://localhost:3001",
+        " https://frontend.example.com, , https://admin.example.com , http://localhost:3001, ",
     )
 
     settings = Settings()
@@ -18,6 +18,23 @@ def test_settings_load_frontend_base_url_and_cors_origins_from_env(monkeypatch):
         "https://frontend.example.com",
         "https://admin.example.com",
         "http://localhost:3001",
+    ]
+
+
+def test_settings_load_json_array_cors_origins_from_env(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost:5432/app")
+    monkeypatch.setenv("SECRET_KEY", "super-secret")
+    monkeypatch.setenv("REFRESH_TOKEN_SECRET", "refresh-secret")
+    monkeypatch.setenv(
+        "BACKEND_CORS_ORIGINS",
+        '["https://frontend.example.com", "https://admin.example.com"]',
+    )
+
+    settings = Settings()
+
+    assert settings.backend_cors_origins == [
+        "https://frontend.example.com",
+        "https://admin.example.com",
     ]
 
 
