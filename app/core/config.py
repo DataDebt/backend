@@ -53,8 +53,24 @@ class Settings(BaseSettings):
                 return []
 
             if normalized.startswith("["):
-                parsed = json.loads(normalized)
-                return [origin.strip() for origin in parsed if origin.strip()]
+                try:
+                    parsed = json.loads(normalized)
+                except json.JSONDecodeError as exc:
+                    raise ValueError("BACKEND_CORS_ORIGINS must be a valid JSON array or comma-separated string") from exc
+
+                if not isinstance(parsed, list):
+                    raise ValueError("BACKEND_CORS_ORIGINS JSON input must decode to a list")
+
+                normalized_origins: list[str] = []
+                for origin in parsed:
+                    if not isinstance(origin, str):
+                        raise ValueError("BACKEND_CORS_ORIGINS entries must be strings")
+
+                    stripped_origin = origin.strip()
+                    if stripped_origin:
+                        normalized_origins.append(stripped_origin)
+
+                return normalized_origins
 
             return [origin.strip() for origin in normalized.split(",") if origin.strip()]
         return value
