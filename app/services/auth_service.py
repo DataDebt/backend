@@ -38,7 +38,7 @@ class AuthService:
         return user, raw_token
 
     async def login(self, email: str, password: str):
-        user = await self.users.get_by_email(email)
+        user = await self.users.get_by_email(normalize_email(email))
         if not user or not verify_password(password, user.password_hash):
             raise ValueError("Invalid credentials")
         if not user.is_verified:
@@ -56,7 +56,7 @@ class AuthService:
         if not token or token.consumed_at or token.expires_at < datetime.now(UTC):
             raise ValueError("Invalid or expired token")
         token.user.is_verified = True
-        token.consumed_at = datetime.now(UTC)
+        await self.verifications.consume(token)
         await self.session.commit()
         return token.user
 
@@ -79,6 +79,9 @@ class AuthService:
         return access_token, raw_new_refresh, token.user
 
     async def request_password_reset(self, email: str):
+        # TODO: Timing side-channel — non-existent addresses return faster than existing
+        # ones. Mitigate before production by adding a constant-time dummy operation on
+        # the not-found path.
         user = await self.users.get_by_email(normalize_email(email))
         if not user:
             # Respond identically regardless of whether email exists
@@ -93,6 +96,6 @@ class AuthService:
         if not token or token.consumed_at or token.expires_at < datetime.now(UTC):
             raise ValueError("Invalid or expired reset token")
         token.user.password_hash = hash_password(new_password)
-        token.consumed_at = datetime.now(UTC)
+        await self.password_resets.consume(token)
         await self.session.commit()
         return token.user
