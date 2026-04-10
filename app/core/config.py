@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", enable_decoding=False)
 
     app_name: str = "Auth Platform API"
     environment: str = "development"
