@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     smtp_from: str = "noreply@example.com"
     smtp_tls: bool = True
     capture_emails_to_files: bool = True
+    base_url: str = "http://localhost:8000"
 
     @field_validator("debug", mode="before")
     @classmethod
