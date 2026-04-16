@@ -1,19 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from enum import Enum
 from uuid import uuid4, UUID
 
 from sqlalchemy import Boolean, CheckConstraint, DateTime, Index, String, func, text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
+from app.core.enums import UserRole
 from app.models.base import Base
-
-
-class UserRole(str, Enum):
-    user = "user"
-    admin = "admin"
 
 
 class User(Base):
