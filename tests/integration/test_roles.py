@@ -31,8 +31,6 @@ async def test_non_admin_cannot_make_admin(db_session, verified_user):
 
 async def _make_admin_user(db_session, email: str, username: str):
     """Helper: create a verified user with admin role, return (user, access_token)."""
-    from app.main import app as fastapi_app
-    from httpx import ASGITransport, AsyncClient
     repo = UserRepository(db_session)
     user = await repo.create(
         email=email,
@@ -44,7 +42,7 @@ async def _make_admin_user(db_session, email: str, username: str):
     await db_session.commit()
     await db_session.refresh(user)
 
-    async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/api/v1/auth/login",
             json={"email": email, "password": "secret123!"},
@@ -70,7 +68,7 @@ async def test_admin_can_promote_user_to_admin(db_session, verified_user):
 @pytest.mark.asyncio
 async def test_admin_can_demote_admin(db_session, verified_user):
     """Admin demoting another admin returns 200 with role='user'."""
-    user, _ = verified_user
+    _, _ = verified_user
     admin, admin_token = await _make_admin_user(db_session, "admin@example.com", "adminuser")
     second_admin, _ = await _make_admin_user(db_session, "admin2@example.com", "adminuser2")
 
