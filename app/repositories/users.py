@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
@@ -55,3 +55,9 @@ class UserRepository:
         await self.session.flush()
         await self.session.refresh(user)
         return user
+
+    async def count_admins(self) -> int:
+        from app.core.enums import UserRole
+        statement = select(func.count()).where(User.role == UserRole.admin)
+        result = await self.session.execute(statement)
+        return result.scalar_one()

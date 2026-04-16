@@ -1,6 +1,8 @@
 from uuid import UUID
 
 from fastapi import Depends, Header, HTTPException, status
+
+from app.core.enums import UserRole
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -62,3 +64,12 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+async def require_admin(current_user=Depends(get_current_user)):
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user
