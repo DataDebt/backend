@@ -5,14 +5,45 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_session, require_admin
 from app.core.enums import UserRole
+from app.core.security import hash_password, verify_password
 from app.repositories.users import UserRepository
-from app.schemas.users import UserResponse
+from app.schemas.users import UpdateProfileRequest, UserResponse
 
 router = APIRouter(tags=["users"])
 
 
 @router.get("/me", response_model=UserResponse)
 async def read_current_user(current_user=Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_profile(
+    body: UpdateProfileRequest,
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    repo = UserRepository(session)
+
+    if body.username is not None and body.username != current_user.username:
+        existing = await repo.get_by_username(body.username)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already taken",
+            )
+        current_user.username = body.username
+
+    if body.new_password:
+        if not verify_password(body.current_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incorrect current password",
+            )
+        current_user.password_hash = hash_password(body.new_password)
+
+    await session.commit()
+    await session.refresh(current_user)
     return current_user
 
 
