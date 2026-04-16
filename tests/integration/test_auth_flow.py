@@ -116,6 +116,18 @@ async def test_register_login_refresh_flow(db_session):
 
 
 @pytest.mark.asyncio
+async def test_get_me_returns_role(db_session, verified_user):
+    user, access_token = verified_user
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/users/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    assert response.status_code == 200
+    assert response.json()["role"] == "user"
+
+
+@pytest.mark.asyncio
 async def test_refresh_token_cannot_be_reused(db_session):
     # Set up: register, confirm, login to get tokens
     service = AuthService(db_session)

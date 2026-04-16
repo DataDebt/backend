@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
 
+from app.models.user import UserRole
+
 
 class UserResponse(BaseModel):
     id: UUID
@@ -10,6 +12,7 @@ class UserResponse(BaseModel):
     username: str
     is_active: bool
     is_verified: bool
+    role: UserRole
     created_at: datetime
     last_login_at: datetime | None = None
 
