@@ -1,3 +1,5 @@
+from typing import Union
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +22,8 @@ from app.services.email_service import (
     send_email,
 )
 
+AuthRegisterResponse = Union[AuthTokensResponse, MessageResponse]
+
 router = APIRouter(tags=["auth"])
 
 
@@ -27,7 +31,7 @@ def _build_frontend_auth_url(path: str, token: str) -> str:
     return f"{settings.frontend_base_url.rstrip('/')}{path}?token={token}"
 
 
-@router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED, responses={201: {"model": AuthRegisterResponse}})
 async def register(
     payload: RegisterRequest,
     background_tasks: BackgroundTasks,
@@ -35,6 +39,11 @@ async def register(
 ):
     service = AuthService(session)
     try:
+        if settings.bypass_email_verification:
+            access_token, refresh_token, user = await service.register_and_login(
+                payload.username, payload.email, payload.password
+            )
+            return AuthTokensResponse(access_token=access_token, refresh_token=refresh_token)
         user, raw_token = await service.register_user(payload.username, payload.email, payload.password)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc

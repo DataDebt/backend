@@ -61,3 +61,8 @@ class UserRepository:
         statement = select(func.count(User.id)).where(User.role == UserRole.admin)
         result = await self.session.execute(statement)
         return result.scalar_one()
+
+    async def get_all(self) -> list[User]:
+        statement = select(User).order_by(User.created_at.desc())
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())

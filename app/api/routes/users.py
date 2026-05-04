@@ -12,6 +12,15 @@ from app.schemas.users import UpdateProfileRequest, UserResponse
 router = APIRouter(tags=["users"])
 
 
+@router.get("/", response_model=list[UserResponse])
+async def list_users(
+    session: AsyncSession = Depends(get_session),
+    _admin=Depends(require_admin),
+):
+    repo = UserRepository(session)
+    return await repo.get_all()
+
+
 @router.get("/me", response_model=UserResponse)
 async def read_current_user(current_user=Depends(get_current_user)):
     return current_user

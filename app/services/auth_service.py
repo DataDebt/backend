@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timezone
 
+from app.core.config import settings
 from app.core.security import hash_password, verify_password
 from app.core.tokens import create_access_token, hash_opaque_token
 from app.repositories.email_verifications import EmailVerificationRepository
@@ -37,18 +38,39 @@ class AuthService:
             email=normalized_email,
             password_hash=hash_password(password),
             is_active=True,
-            is_verified=False,
+            is_verified=settings.bypass_email_verification,
         )
         raw_token, token_hash, expires_at = self.tokens.issue_verification_token()
         await self.verifications.create(user_id=user.id, token_hash=token_hash, expires_at=expires_at)
         await self.session.commit()
         return user, raw_token
 
+    async def register_and_login(self, username: str, email: str, password: str):
+        normalized_email = normalize_email(email)
+        if await self.users.get_by_email(normalized_email):
+            raise ValueError("Email already registered")
+        if await self.users.get_by_username(username):
+            raise ValueError("Username already taken")
+
+        user = await self.users.create(
+            username=username,
+            email=normalized_email,
+            password_hash=hash_password(password),
+            is_active=True,
+            is_verified=True,
+        )
+        raw_refresh, refresh_hash, refresh_expires_at = self.tokens.issue_refresh_token()
+        await self.refresh_token_repo.create(user_id=user.id, token_hash=refresh_hash, expires_at=refresh_expires_at)
+        user.last_login_at = datetime.now(UTC)
+        await self.session.commit()
+        access_token = create_access_token(subject=str(user.id), username=user.username)
+        return access_token, raw_refresh, user
+
     async def login(self, email: str, password: str):
         user = await self.users.get_by_email(normalize_email(email))
         if not user or not verify_password(password, user.password_hash):
             raise ValueError("Invalid credentials")
-        if not user.is_verified:
+        if not settings.bypass_email_verification and not user.is_verified:
             raise PermissionError("Email not verified")
 
         raw_refresh, refresh_hash, refresh_expires_at = self.tokens.issue_refresh_token()
